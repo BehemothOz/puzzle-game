@@ -1,4 +1,33 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 16px;
+  line-height: normal;
+  background-color: #eee;
+}
+
+p {
+  margin: 0;
+}
+
 .main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  padding-top: 70px;
+  padding-bottom: 20px;
+}
+
+.screen-rectangles {
+  align-self: center;
   width: 70vw;
   max-width: 700px;
   display: flex;
@@ -9,10 +38,10 @@
 
 .rectangle {
   width: 30vw;
-  max-width: 300px;
-  height: 30vw;
-  max-height: 300px;
-  margin: 1vw;
+  max-width: 250px;
+  height: 30vh;
+  max-height: 250px;
+  margin: 0.5vw;
 
   opacity: 0.8;
 }
@@ -31,4 +60,64 @@
 
 .rectangle.green {
   background-color: green;
+}
+
+.header {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 50px;
+  padding: 0 15px;
+  background-color: #383736;
+  z-index: 100;
+}
+
+.header .level {
+  font-size: 20px;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+
+.screen-end,
+.screen-start {
+  width: 80vw;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.screen-end .title,
+.screen-start .title {
+  margin: 0;
+  margin-bottom: 0.7em;
+  font-size: 2.4rem;
+}
+
+.screen-start .description {
+  margin-bottom: 1.5em;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.btn {
+  display: inline-block;
+  vertical-align: middle;
+  width: 6rem;
+  height: 2rem;
+  padding: 0 .5rem;
+  font-size: .8rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: #007cbb;
+  text-align: center;
+  text-transform: uppercase;
+  border: 1px solid #0077b7;
+  border-radius: .125rem;
+  background-color: transparent;
+  cursor: pointer;
 }
