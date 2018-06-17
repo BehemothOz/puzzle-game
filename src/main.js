@@ -17,6 +17,7 @@ let app = document.querySelector(`#app`);
 let initialState = {
   rectangles: [`orange`, `blue`, `red`, `green`],
   expectedClicks: [`orange`, `blue`, `red`, `green`],
+  // customСlicks: [],
   score: 0,
   started: false,
   ended: false
@@ -91,6 +92,12 @@ let intents = {
     map(_ => true)
   ),
 
+  progressGame$: click$.pipe(
+    filter(event => filterRectangle(event.target.dataset.color)),
+    map(event => event.target),
+    map(elem => elem.dataset.color)
+  ),
+
   endGame$: click$.pipe(
     filter(event => event.target.classList.contains(`btn-end`)),
     map(_ => true)
@@ -106,6 +113,12 @@ let action$ = merge(
   intents.startGame$.pipe(
     map(_ => function startGame(state) {
       return Object.assign({}, state, {started: true})
+    })
+  ),
+
+  intents.progressGame$.pipe(
+    map(_ => function(state) {
+      return Object.assign({}, state, {score: state.score + 1})
     })
   ),
 
@@ -132,4 +145,5 @@ let state$ = action$.pipe(
 
 state$.subscribe(state => 
   renderToDom(state)
+  // console.log(state)
 );
