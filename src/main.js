@@ -39,19 +39,14 @@ let renderStartScreen = () => {
             <h1 class="title">Puzzle</h1>
             <p class="description"><b>Rules.</b> Four colored buttons light up in a certain order. After the drawing is displayed, you need to repeat the template by clicking the buttons in the correct order. The template becomes longer with each successful attempt. The error leads to the end of the game.</p>
             <button class="btn btn-start">Start</button>
+            <button class="btn btn-end">End</button>
           </div>`;
 }
 
-// let renderGameScreen = (state) => {
-//   return `${renderHeaderTemplate(state)}
-//           <div class="screen-rectangles">
-//             ${state.rectangles.map(color => `<div class="rectangle ${color}" data-color="${color}"></div>`).join('')}
-//           </div>`;
-// }
 let renderGameScreen = (state) => {
   return `${renderHeaderTemplate(state)}
           <div class="screen-rectangles">
-            <button class="btn btn-end">End</button>
+            ${state.rectangles.map(color => `<div class="rectangle ${color}" data-color="${color}"></div>`).join('')}
           </div>`;
 }
 
