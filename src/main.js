@@ -1,4 +1,4 @@
-import { map, flatMap, filter, buffer, take, bufferCount, sequenceEqual } from 'rxjs/operators';
+import { map, flatMap, filter, buffer, take, bufferCount, sequenceEqual, scan, subscribeOn } from 'rxjs/operators';
 import { Observable, fromEvent, pipe, of, from, merge } from 'rxjs';
 
 
@@ -42,10 +42,16 @@ let renderStartScreen = () => {
           </div>`;
 }
 
+// let renderGameScreen = (state) => {
+//   return `${renderHeaderTemplate(state)}
+//           <div class="screen-rectangles">
+//             ${state.rectangles.map(color => `<div class="rectangle ${color}" data-color="${color}"></div>`).join('')}
+//           </div>`;
+// }
 let renderGameScreen = (state) => {
   return `${renderHeaderTemplate(state)}
           <div class="screen-rectangles">
-            ${state.rectangles.map(color => `<div class="rectangle ${color}" data-color="${color}"></div>`).join('')}
+            <button class="btn btn-end">End</button>
           </div>`;
 }
 
@@ -63,7 +69,7 @@ let renderSelectedScreen = (state) => {
 
 let renderToDom = (state) => {
   app.innerHTML = renderSelectedScreen(state);
-  initGame(state);
+  // initGame(state);
 }
 
 renderToDom(initialState);
@@ -74,66 +80,111 @@ renderToDom(initialState);
   Logics app
 */
 
-function initGame(state) {
 
+
+/*
+  Блоки композиции: интенты, экшены, состояние и логика рендеринга.
+*/
+
+// actions$ - зависит от intents.yourIntent$;
+// state$ - зависит от потока actions$
+
+let click$ = fromEvent(document, `click`);
+
+let intents = {
+  startGame$: click$.pipe(
+    filter(event => event.target.classList.contains(`btn-start`)),
+    map(_ => true)
+  ),
+
+  endGame$: click$.pipe(
+    filter(event => event.target.classList.contains(`btn-end`)),
+    map(_ => true)
+  )
+}
+
+let action$ = merge(
+  intents.startGame$.pipe(
+    map(_ => function startGame(state) {
+      return Object.assign({}, state, {started: true})
+    })
+  ),
+
+  intents.endGame$.pipe(
+    map(_ => function endGame(state) {
+      return Object.assign({}, state, {ended: true})
+    })
+  )
+)
+
+let state$ = action$.pipe(
+  scan((state, func) => func(state), initialState)
+)
+
+state$.subscribe(state => 
+  renderToDom(state)
+);
+
+
+// function initGame(state) {
   // Вспомогательная функци: фильтрация кликов (только на прямоугольниках)
-  let filterRectangle = (target) => {
-    return target == `orange` || target == `blue` || target == `red` || target == `green`;
-  }
+  // let filterRectangle = (target) => {
+  //   return target == `orange` || target == `blue` || target == `red` || target == `green`;
+  // }
 
   // Stream clicks on document
-  let clickDocument$ = fromEvent(document, `click`);
+  // let clickDocument$ = fromEvent(document, `click`);
 
   // Stream click button start
-  let clickButtonStart$ = clickDocument$.pipe(
-      filter(event => event.target.classList.contains(`btn-start`)),
-      map(_ => true)
-    );
+  // let clickButtonStart$ = clickDocument$.pipe(
+  //     filter(event => event.target.classList.contains(`btn-start`)),
+  //     map(_ => true)
+  //   );
 
   // Stream filtered clicks on document (rectangle)
-  let filteredClickRectangle$ = clickDocument$.pipe(
-      filter(event => filterRectangle(event.target.dataset.color))
-    );
+  // let filteredClickRectangle$ = clickDocument$.pipe(
+  //     filter(event => filterRectangle(event.target.dataset.color))
+  //   );
 
   // Stream selected rectangle
-  let clickRectangle$ = filteredClickRectangle$.pipe(
-      map(event => event.target),
-      map(elem => elem.dataset.color)
-    );
+  // let clickRectangle$ = filteredClickRectangle$.pipe(
+  //     map(event => event.target),
+  //     map(elem => elem.dataset.color)
+  //   );
 
   // Comparison with the expected sequence
   // Uses the state: expectedClicks.length and expectedClicks
-  let sequenceComparison$ = clickRectangle$.pipe(bufferCount(state.expectedClicks.length), flatMap(sequence => {
-    return from(state.expectedClicks).pipe(sequenceEqual(from(sequence)))
-  }));
+  // let sequenceComparison$ = clickRectangle$.pipe(bufferCount(state.expectedClicks.length), flatMap(sequence => {
+  //   return from(state.expectedClicks).pipe(sequenceEqual(from(sequence)))
+  // }));
 
 
   // Subscribe (start)
-  clickButtonStart$.subscribe(result => {
-    // Copy init state + change started
-    let newState = Object.assign({}, state, {started: true});
+  // clickButtonStart$.subscribe(result => {
+  //   // Copy init state + change started
+  //   let newState = Object.assign({}, state, {started: true});
 
-    renderToDom(newState);
-  })
+  //   renderToDom(newState);
+  // })
 
   // Subscribe (game process)
-  sequenceComparison$.subscribe(result => {
-    let newState;
+  // sequenceComparison$.subscribe(result => {
+  //   let newState;
     
-    if (result) {
-      newState = Object.assign({}, state, {
-        score: state.score + 1,
-        started: true
-      });
+  //   if (result) {
+  //     newState = Object.assign({}, state, {
+  //       score: state.score + 1,
+  //       started: true
+  //     });
 
-      renderToDom(newState);
-    }
+  //     renderToDom(newState);
+  //   }
 
-    if (!result) {
-      newState = Object.assign({}, state, {ended: true});
+  //   if (!result) {
+  //     newState = Object.assign({}, state, {ended: true});
 
-      renderToDom(newState);
-    }
-  })
+  //     renderToDom(newState);
+  //   }
+  // })
 
-}
+// }
