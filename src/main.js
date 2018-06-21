@@ -1,5 +1,7 @@
-import { map, flatMap, filter, buffer, take, bufferCount, sequenceEqual, scan, subscribeOn } from 'rxjs/operators';
-import { Observable, fromEvent, pipe, of, from, merge } from 'rxjs';
+import * as R from "ramda";
+
+import { map, flatMap, filter, buffer, take, bufferCount, sequenceEqual, scan, subscribeOn, mapTo, publishReplay, refCount } from 'rxjs/operators';
+import { Observable, Subject, fromEvent, pipe, of, from, merge } from 'rxjs';
 
 
 let app = document.querySelector(`#app`);
@@ -17,13 +19,11 @@ let app = document.querySelector(`#app`);
 let initialState = {
   rectangles: [`orange`, `blue`, `red`, `green`],
   expectedClicks: [`orange`, `blue`, `red`, `green`],
-  // customСlicks: [],
+  customСlicks: [],
   score: 0,
-  started: false,
+  started: true,
   ended: false
 }
-
-
 
 /*
   Render screens
@@ -92,7 +92,7 @@ let intents = {
     map(_ => true)
   ),
 
-  progressGame$: click$.pipe(
+  solveStep$: click$.pipe(
     filter(event => filterRectangle(event.target.dataset.color)),
     map(event => event.target),
     map(elem => elem.dataset.color)
@@ -108,6 +108,7 @@ let intents = {
 /*
   Action block (depends on intents)
 */
+// let qq = new Subject();
 
 let action$ = merge(
   intents.startGame$.pipe(
@@ -116,34 +117,61 @@ let action$ = merge(
     })
   ),
 
-  intents.progressGame$.pipe(
-    map(_ => function(state) {
-      return Object.assign({}, state, {score: state.score + 1})
-    })
-  ),
+  // intents.solveStep$.pipe(
+  //   map(_ => function(state) {
+  //     return Object.assign({}, state, {score: state.score + 1})
+  //   })
+  // ),
 
   intents.endGame$.pipe(
     map(_ => function endGame(state) {
       return Object.assign({}, state, {ended: true})
     })
-  )
+  ),
+
+
+  intents.solveStep$.pipe(
+    map(color => function(state) {
+      return Object.assign({}, state, {customСlicks: state.customСlicks.concat(color)})
+    })
+  ),
 )
+
+
+/*
+  Subject
+*/
+
+let actionPool$ = new Subject()
+let actions$ = merge(actionPool$, action$)
+
 
 
 /*
   State block (depends on action)
 */
 
-let state$ = action$.pipe(
-  scan((state, func) => func(state), initialState)
+let state$ = actions$.pipe(
+  scan((state, changeFun) => changeFun(state), initialState)
 )
 
+state$.subscribe(state => {
+  console.log(state);
+
+  if (state.customСlicks >= state.expectedClicks) {
+    console.log(`true`);
+
+    actionPool$.next((state) => Object.assign({}, state, {ended: true}))    
+  }
+
+  renderToDom(state);
+})
 
 /*
   Render block
 */
 
-state$.subscribe(state => 
-  renderToDom(state)
-  // console.log(state)
-);
+// state$.subscribe(state => 
+//   renderToDom(state)
+//   // console.log(state)
+// );

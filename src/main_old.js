@@ -26,8 +26,10 @@ function initGame(state) {
 
   // Comparison with the expected sequence
   // Uses the state: expectedClicks.length and expectedClicks
-  let sequenceComparison$ = clickRectangle$.pipe(bufferCount(state.expectedClicks.length), flatMap(sequence => {
-    return from(state.expectedClicks).pipe(sequenceEqual(from(sequence)))
+  let sequenceComparison$ = clickRectangle$.pipe(
+    bufferCount(state.expectedClicks.length),
+    flatMap(sequence => {
+      return from(state.expectedClicks).pipe(sequenceEqual(from(sequence)))
   }));
 
 
