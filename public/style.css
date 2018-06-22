@@ -36,6 +36,13 @@ p {
   margin: 0 auto;
 }
 
+@keyframes fadeIn
+{
+  0%   {opacity: 0;}
+  100% {opacity: 1;}
+}
+
+
 .rectangle {
   width: 30vw;
   max-width: 250px;
@@ -44,6 +51,14 @@ p {
   margin: 0.5vw;
 
   opacity: 0.8;
+  cursor: pointer;
+  /* transition: all 1s ease; */
+}
+
+.rectangle.active {
+  outline: 5px solid #0077b7;
+  /* animation-name: fadeIn;
+  animation-duration: 1s; */
 }
 
 .rectangle.orange {
