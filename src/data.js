@@ -16,7 +16,7 @@ let initialState = {
   expectedClicks: [`orange`, `blue`, `red`, `green`],
   actualClicks: [],
   score: 0,
-  started: false,
+  started: true,
   ended: false
 }
 
