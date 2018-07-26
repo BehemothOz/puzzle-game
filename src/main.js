@@ -7,6 +7,8 @@ import initialState from './data';
 import { filterRectangle, getArrayWithRandomElement, playSequence } from './helpers';
 import { renderToDom } from './view';
 
+import { makeBlinking } from './blick';
+
 // Anonymous function to prevent the filling of global space
 (() => {
 
@@ -32,7 +34,9 @@ import { renderToDom } from './view';
     endGame$: click$.pipe(
       filter(event => event.target.classList.contains(`btn-end`)),
       map(_ => true)
-    )
+    ),
+
+    blink$: makeBlinking(initialState.expectedClicks, initialState.expectedClicks.length * 2, 1000, 1000)
   }
 
 
@@ -47,6 +51,12 @@ import { renderToDom } from './view';
     intents.solveStep$.pipe(
       map(color => function(state) {
         return Object.assign({}, state, {actualClicks: state.actualClicks.concat(color)})
+      })
+    ),
+
+    intents.blink$.pipe(
+      map(obj => function startGame(state) {
+        return Object.assign({}, state, {glare: obj});
       })
     )
   )

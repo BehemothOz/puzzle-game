@@ -15,7 +15,11 @@ let renderStartScreen = () => {
 let renderGameScreen = (state) => {
   return `${renderHeaderTemplate(state)}
           <div class="screen-rectangles">
-            ${state.rectangles.map(color => `<div class="rectangle ${color}" data-color="${color}"></div>`).join('')}
+            ${state.rectangles.map(color =>
+              `<div class="rectangle
+                ${color}
+                ${color == state.glare.name && state.glare.glare ? 'active': ''}" data-color="${color}"></div>`
+              ).join('')}
           </div>`;
 }
 

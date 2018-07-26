@@ -17,7 +17,9 @@ let initialState = {
   actualClicks: [],
   score: 0,
   started: true,
-  ended: false
+  ended: false,
+
+  glare: {}
 }
 
 export default initialState;
