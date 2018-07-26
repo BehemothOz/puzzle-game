@@ -1,103 +1,101 @@
 import * as R from 'ramda';
 
-import { map, filter, scan, flatMap, delay, elementAt } from 'rxjs/operators';
+import { map, filter, scan, flatMap, delay } from 'rxjs/operators';
 import { Observable, Subject, fromEvent, pipe, of, from, merge, interval } from 'rxjs';
 
+import initialState from './data';
+import { filterRectangle, getArrayWithRandomElement, playSequence } from './helpers';
+import { renderToDom } from './view';
 
-// State
-let initialState = {
-  rectangles: [`orange`, `blue`, `red`, `green`],
-  expectedClicks: [`orange`, `blue`, `red`, `green`],
-  actualClicks: [],
-  score: 0,
-  started: true,
-  ended: false,
+// Anonymous function to prevent the filling of global space
+(() => {
 
-  glare: {}
-// '    {
-//       name: `orange`,
-//       glare: false,
-//     },
-//     {
-//       name: `blue`,
-//       glare: false,
-//     },
-//     {
-//       name: `red`,
-//       glare: false,
-//     },
-//     {
-//       name: `green`,
-//       glare: false,
-//     }'
-//   ],
-}
+  let app = document.querySelector(`#app`);
+  let click$ = fromEvent(document, `click`);
 
-// DOM
-let renderGameScreen = (state) => {
-  return `<div class="screen-rectangles">
-            ${state.rectangles
-              .map(color => `<div class="rectangle ${color}
-                ${color == state.glare.name && state.glare.glare ? 'active': ''}" data-color="${color}"></div>`)
-              .join('')
-            }
-          </div>`;
-}
-
-let renderToDom = (state) => {
-  app.innerHTML = renderGameScreen(state);
-}
-
-// Call
-renderToDom(initialState);
+  renderToDom(initialState);
 
 
+  // Block intents
+  let intents = {
+    startGame$: click$.pipe(
+      filter(event => event.target.classList.contains(`btn-start`)),
+      map(_ => true)
+    ),
+
+    solveStep$: click$.pipe(
+      filter(event => filterRectangle(event.target.dataset.color)),
+      map(event => event.target),
+      map(elem => elem.dataset.color)
+    ),
+
+    endGame$: click$.pipe(
+      filter(event => event.target.classList.contains(`btn-end`)),
+      map(_ => true)
+    )
+  }
 
 
+  // Action block (depends on intents)
+  let action$ = merge(
+    intents.startGame$.pipe(
+      map(_ => function startGame(state) {
+        return Object.assign({}, state, {started: true})
+      })
+    ),
 
-let makePayload = (n) => {
-  return R.range(0, n).map((x, i) => {
-    return i % 2 ? false : true;
-  })
-}
-
-let addTargetBlink = (payload, targets) => {
-  let index = 0;
-
-  return payload.map((elem, i) => {
-    if (i % 2 == 0 && i != 0 ) index += 1;
-    return [targets[index], elem];
-  })
-}
-
-let withPauses = (payload, t1, t2) => {
-  return payload.reduce((z, x, i) => {
-    return [...z, [...x, ((Math.ceil(i / 2) * t1) + Math.floor(i / 2) * t2)]]
-  }, [])
-}
-
-let makeBlinking = (state, n, t1, t2) => {
-  let ps1 = makePayload(n) // [true, false, true, false...{2 * N times}]
-  let ps2 = addTargetBlink(ps1, state); // [[target, true], [target, false], [target, true], [target, false]...{2 * N times}]
-  let ps3 = withPauses(ps2, t1, t2) // [[target, true, 0], [target, false, 10], [target, true, 60], [target, false, 70] ...]
-
-  return from(ps3).pipe(
-    flatMap(([x, d, z]) => of({name: x, glare: d}).pipe(delay(z))),
+    intents.solveStep$.pipe(
+      map(color => function(state) {
+        return Object.assign({}, state, {actualClicks: state.actualClicks.concat(color)})
+      })
+    )
   )
-}
 
-let blink$ = makeBlinking(initialState.expectedClicks, initialState.expectedClicks.length * 2, 1000, 1000 );
 
-let blinkAction$ = blink$.pipe(
-  map(obj => function startGame(state) {
-    return Object.assign({}, state, {glare: obj});
-  })
-)
+  // Subject
+  let actionPool$ = new Subject();
+  let actions$ = merge(actionPool$, action$);
 
-let state$ = blinkAction$.pipe(
-  scan((state, changeFun) => changeFun(state), initialState)
-)
 
-state$.subscribe(x => {
-  renderToDom(x);
-})
+  // State block (depends on action)
+  let state$ = actions$.pipe(
+    scan((state, changeFun) => changeFun(state), initialState)
+  )
+
+
+  // Render block
+  state$.subscribe(state => {
+    console.log(state);
+    renderToDom(state);
+
+    if (!R.isEmpty(state.actualClicks)) {
+
+      if (R.startsWith(state.actualClicks, state.expectedClicks) && state.actualClicks.length == state.expectedClicks.length) {
+        actionPool$.next((state) => {
+          return Object.assign(
+            {},
+            state,
+            {
+              expectedClicks: getArrayWithRandomElement(state.expectedClicks),
+              actualClicks: [],
+              score: state.score + 1
+            }
+          )
+        });
+      }
+
+      else if (!R.startsWith(state.actualClicks, state.expectedClicks)) {
+        actionPool$.next((state) => {
+          return Object.assign(
+            {},
+            state,
+            {
+              actualClicks: [],
+              ended: true
+            }
+          )
+        });
+      }
+    }
+  });
+})();
