@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 
-import { map, filter, scan, flatMap, delay } from 'rxjs/operators';
+import { map, filter, scan, flatMap, delay, elementAt } from 'rxjs/operators';
 import { Observable, Subject, fromEvent, pipe, of, from, merge, interval } from 'rxjs';
 
 
@@ -54,73 +54,50 @@ renderToDom(initialState);
 
 
 
-// Blick
+
 let makePayload = (n) => {
   return R.range(0, n).map((x, i) => {
     return i % 2 ? false : true;
   })
 }
 
-// console.log(makePayload(8))
+let addTargetBlink = (payload, targets) => {
+  let index = 0;
+
+  return payload.map((elem, i) => {
+    if (i % 2 == 0 && i != 0 ) index += 1;
+    return [targets[index], elem];
+  })
+}
 
 let withPauses = (payload, t1, t2) => {
   return payload.reduce((z, x, i) => {
-    return [...z, [x, ((Math.ceil(i / 2) * t1) + Math.floor(i / 2) * t2)]]
-    // return [...z, [x]]
-    // console.log(`z: ` + z);
-    // console.log(`x: ` + x);
-    // console.log(`i: ` + i);
+    return [...z, [...x, ((Math.ceil(i / 2) * t1) + Math.floor(i / 2) * t2)]]
   }, [])
 }
 
-
-let qwerty = (ps2) => {
-  return initialState.expectedClicks.map(x => console.log(x))
-}
-
 let makeBlinking = (state, n, t1, t2) => {
-// let makeBlinking = () => {
+  let ps1 = makePayload(n) // [true, false, true, false...{2 * N times}]
+  let ps2 = addTargetBlink(ps1, state); // [[target, true], [target, false], [target, true], [target, false]...{2 * N times}]
+  let ps3 = withPauses(ps2, t1, t2) // [[target, true, 0], [target, false, 10], [target, true, 60], [target, false, 70] ...]
 
-  // console.log(state)
-
-  // let ps1 = makePayload(n) // [true, false, true, false...{2 * N times}]
-  // let ps2 = withPauses(ps1, t1, t2) // [[true, 0], [false, 10], [true, 60], [false, 70] ...]
-  // let ps3 = qwerty(ps2);
-
-  let qq = [[`orange`, true, 0], [`orange`, false, 1000], [`blue`, true, 3000], [`blue`, false, 4000]];
-  // let qq = [[true, 0], [false, 1000], [true, 3000], [false, 4000]];
-  // console.log(ps2);
-
-  // return from(ps2).pipe(
-  return from(qq).pipe(
-    // flatMap(([x, d]) => of(x).pipe(delay(d))),
+  return from(ps3).pipe(
     flatMap(([x, d, z]) => of({name: x, glare: d}).pipe(delay(z))),
-  ) // 1-0---1-0---1-0--->
+  )
 }
 
-// let blink$ = makeBlinking(initialState, 8, 1000, 2000) // 10 is a BRIGHT delay; 50 is a MUTED delay
-let blink$ = makeBlinking();
+let blink$ = makeBlinking(initialState.expectedClicks, initialState.expectedClicks.length * 2, 1000, 1000 );
 
-let blink$2 = blink$.pipe(
+let blinkAction$ = blink$.pipe(
   map(obj => function startGame(state) {
     return Object.assign({}, state, {glare: obj});
-    // console.log(obj);
   })
 )
 
-  // State block (depends on action)
-let state$ = blink$2.pipe(
+let state$ = blinkAction$.pipe(
   scan((state, changeFun) => changeFun(state), initialState)
 )
 
 state$.subscribe(x => {
-  console.log(x)
   renderToDom(x);
-  // initialState.expectedClicks.forEach((color) => {
-  //   let rect = document.querySelector(`.rectangle[data-color="${color}"]`);
-  //   x(rect)
-  //   // console.log(rect)
-  // })
-  
-  // console.log(x, new Date().toISOString())
 })
